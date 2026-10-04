@@ -22,6 +22,12 @@ jobs:
       - name: Language resource checks
         shell: powershell
         run: .\tools\Test-Languages.ps1
+      - name: Follow helper state machine
+        shell: powershell
+        run: .\CodexPet.Follow.ps1 -SelfTest
+      - name: Isolated preview and window checks
+        shell: powershell
+        run: .\tools\Test-Diagnostics.ps1
       - name: Render preview from default configuration
         shell: powershell
         run: .\CodexPet.ps1 -Preview -ExpandedPreview -Language en-US

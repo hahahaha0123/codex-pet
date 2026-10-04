@@ -8,6 +8,8 @@ function Tokens([long]$inputCount,[long]$cached,[long]$outputCount,[long]$lastIn
  @{type='event_msg';payload=@{type='token_count';info=@{total_token_usage=@{input_tokens=$inputCount;cached_input_tokens=$cached;cache_write_input_tokens=0;output_tokens=$outputCount;total_tokens=($inputCount+$outputCount)};last_token_usage=@{input_tokens=$lastInput;total_tokens=($lastInput+100)};model_context_window=1000000}}} | ConvertTo-Json -Depth 8 -Compress
 }
 $path=Join-Path $env:TEMP ('codex-pet-usage-'+[guid]::NewGuid()+'.jsonl')
+$lockedPath=Join-Path $env:TEMP ('codex-pet-locked-'+[guid]::NewGuid()+'.jsonl')
+$exclusive=$null
 $worker=[CodexPet.ModelUsage]::new((Join-Path $root 'api-prices.json'))
 try {
  $rows=@((Context 'gpt-6-sol'),(Tokens 1000 800 100),(Tokens 1000 800 100),(Context 'gpt-6-astra' 'priority'),(Tokens 1500 1000 300),(Context 'gpt-6.1-sol'),(Tokens 301500 201000 400 300000))
@@ -35,10 +37,32 @@ try {
  $deadline=(Get-Date).AddSeconds(3)
  do {Start-Sleep -Milliseconds 100;$live=$worker.Snapshot()|ConvertFrom-Json} while($live.Total -ne 302620 -and (Get-Date) -lt $deadline)
  Assert ($live.Total -eq 302620) 'appended bytes counted once'
+ $worker.Follow('')
+ $deadline=(Get-Date).AddSeconds(3)
+ do {Start-Sleep -Milliseconds 100;$live=$worker.Snapshot()|ConvertFrom-Json} while($live.Path -ne '' -and (Get-Date) -lt $deadline)
+ Assert ($live.Path -eq '' -and @($live.Models).Count -eq 0) 'clearing selection clears stale usage'
+ [IO.File]::WriteAllText($lockedPath,((Context 'gpt-6-sol')+"`n"+(Tokens 1000 0 100)+"`n"))
+ $exclusive=[IO.File]::Open($lockedPath,[IO.FileMode]::Open,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)
+ $worker.Follow($lockedPath)
+ $deadline=(Get-Date).AddSeconds(3)
+ do {Start-Sleep -Milliseconds 100;$live=$worker.Snapshot()|ConvertFrom-Json} while(-not $live.Error -and (Get-Date) -lt $deadline)
+ Assert ([bool]$live.Error) 'locked session publishes a recoverable error'
+ $exclusive.Dispose();$exclusive=$null
+ $deadline=(Get-Date).AddSeconds(4)
+ do {Start-Sleep -Milliseconds 100;$live=$worker.Snapshot()|ConvertFrom-Json} while(($live.Total -ne 1100 -or $live.Error) -and (Get-Date) -lt $deadline)
+ Assert ($live.Total -eq 1100 -and -not $live.Error) 'worker recovers after file lock releases'
+ [IO.File]::Delete($lockedPath)
+ $deadline=(Get-Date).AddSeconds(3)
+ do {Start-Sleep -Milliseconds 100;$live=$worker.Snapshot()|ConvertFrom-Json} while(-not $live.Error -and (Get-Date) -lt $deadline)
+ Assert ([bool]$live.Error -and @($live.Models).Count -eq 0) 'deleted session clears stale totals'
+ [IO.File]::WriteAllText($lockedPath,((Context 'gpt-6-sol')+"`n"+(Tokens 200 0 20)+"`n"))
+ $deadline=(Get-Date).AddSeconds(4)
+ do {Start-Sleep -Milliseconds 100;$live=$worker.Snapshot()|ConvertFrom-Json} while(($live.Total -ne 220 -or $live.Error) -and (Get-Date) -lt $deadline)
+ Assert ($live.Total -eq 220 -and -not $live.Error) 'recreated session starts a fresh ledger'
  $codexHome=Join-Path $env:USERPROFILE '.codex'
- if((Test-Path -LiteralPath $codexHome) -and @(Get-ChildItem -LiteralPath $codexHome -Filter 'state_*.sqlite').Count) {
+ if($env:CODEX_PET_TEST_LOCAL_CATALOG -eq '1' -and (Test-Path -LiteralPath $codexHome) -and @(Get-ChildItem -LiteralPath $codexHome -Filter 'state_*.sqlite').Count) {
   $sessions=[CodexPet.SessionCatalog]::Read($codexHome)|ConvertFrom-Json
   if(@($sessions).Count){Assert ($sessions[0].Title -and (Test-Path -LiteralPath $sessions[0].FullName)) 'catalog title, project and authoritative rollout path'}
   else{Write-Output 'SKIP local catalog: no readable sessions'}
- }else{Write-Output 'SKIP local catalog: Codex is not installed; fixture checks remain enabled'}
-} finally {$worker.Dispose();Remove-Item -LiteralPath $path -ErrorAction SilentlyContinue}
+ }else{Write-Output 'SKIP local catalog: opt in with CODEX_PET_TEST_LOCAL_CATALOG=1; fixtures are offline'}
+} finally {if($exclusive){$exclusive.Dispose()};$worker.Dispose();Remove-Item -LiteralPath $path,$lockedPath -ErrorAction SilentlyContinue}

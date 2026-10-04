@@ -113,10 +113,15 @@ namespace CodexPet {
    char[] buffer=new char[65536];
    try {
     while(!stopped) {
+     try {
      string path;lock(gate)path=requested;
-     if(path=="" || !File.Exists(path)) {Thread.Sleep(200);continue;}
+     if(path=="" || !File.Exists(path)) {
+      if(reader!=null){reader.Dispose();reader=null;}active="";ledger=null;partial.Clear();length=0;
+      lock(gate)result=json.Serialize(new Dictionary<string,object>{{"Path",path},{"Models",new object[0]},{"Loading",false},{"Error",path==""?"":"Session file is unavailable"}});
+      Thread.Sleep(200);continue;
+     }
      if(path!=active || new FileInfo(path).Length<length) {
-      if(reader!=null)reader.Dispose();
+      if(reader!=null){reader.Dispose();reader=null;}
       var id=Regex.Match(Path.GetFileNameWithoutExtension(path),"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",RegexOptions.IgnoreCase);
       active=path;ledger=new Ledger(this,id.Success?id.Value:"");partial.Clear();length=0;
       reader=new StreamReader(new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete),Encoding.UTF8,true,65536);
@@ -130,9 +135,14 @@ namespace CodexPet {
       length=reader.BaseStream.Position;
       Publish(ledger,active,!reader.EndOfStream);
      } else {Publish(ledger,active,false);Thread.Sleep(500);}
+     } catch(Exception ex) {
+      if(reader!=null){reader.Dispose();reader=null;}
+      active="";ledger=null;partial.Clear();length=0;
+      lock(gate)result=json.Serialize(new Dictionary<string,object>{{"Error",ex.Message}});
+      for(int i=0;i<5&&!stopped;i++)Thread.Sleep(100);
+     }
     }
-   } catch(Exception ex) {lock(gate) result=json.Serialize(new Dictionary<string,object>{{"Path",active},{"Error",ex.Message}});}
-   finally {if(reader!=null)reader.Dispose();}
+   } finally {if(reader!=null)reader.Dispose();}
   }
  }
 }

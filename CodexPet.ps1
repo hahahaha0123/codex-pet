@@ -1,18 +1,20 @@
 ﻿param([switch]$Preview, [switch]$ExpandedPreview, [switch]$AnimationCheck, [int]$SmokeSeconds = 0, [string]$Language)
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
+$isDiagnostic = $Preview -or $AnimationCheck -or $SmokeSeconds -gt 0
+$diagnosticRoot = if($isDiagnostic) {Join-Path $root ('dist\checks\runs\'+[guid]::NewGuid().ToString('N'))} else {$null}
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
 Add-Type -Path (Join-Path $root 'ModelUsage.cs'),(Join-Path $root 'SessionCatalog.cs'),(Join-Path $root 'HistoryUsage.cs') -ReferencedAssemblies System.Web.Extensions,System.Core
 . (Join-Path $root 'CodexPet.Data.ps1')
 . (Join-Path $root 'CodexPet.Layout.ps1')
 . (Join-Path $root 'CodexPet.Language.ps1')
 Import-PetLanguages (Join-Path $root 'locales')
-$stateDir = Join-Path $root 'state'
+$stateDir = if($isDiagnostic) {Join-Path $diagnosticRoot 'state'} else {Join-Path $root 'state'}
 [void][IO.Directory]::CreateDirectory($stateDir)
 $log = Join-Path $stateDir 'pet.log'
 function Write-Log([string]$message) { Add-Content -LiteralPath $log -Encoding UTF8 -Value ((Get-Date -Format s) + ' ' + $message) }
 try {
-$cfgPath=Join-Path $root 'pet.config.json'
+$cfgPath=if($isDiagnostic) {Join-Path $diagnosticRoot 'pet.config.json'} else {Join-Path $root 'pet.config.json'}
 if(-not (Test-Path -LiteralPath $cfgPath)) {Copy-Item -LiteralPath (Join-Path $root 'pet.config.example.json') -Destination $cfgPath}
 $cfg=Get-Content -LiteralPath $cfgPath -Raw -Encoding UTF8 | ConvertFrom-Json
 if(-not $cfg.PSObject.Properties['scale']) {Add-Member -InputObject $cfg -NotePropertyName scale -NotePropertyValue .8}
@@ -21,8 +23,26 @@ if($Language){$cfg.language=$Language}
 if($cfg.language -ne 'auto' -and -not $script:LanguagePacks.ContainsKey($cfg.language)){$cfg.language='zh-CN'}
 Select-PetLanguage $cfg.language
 if (-not $cfg.codexHome) { $cfg.codexHome=Join-Path $env:USERPROFILE '.codex' }
+if($isDiagnostic) {
+    $cfg.codexHome=Join-Path $diagnosticRoot 'codex-home';$cfg.pinnedPath=''
+    [void][IO.Directory]::CreateDirectory($cfg.codexHome)
+    if($SmokeSeconds -gt 0) {
+        $fixtureDir=Join-Path $cfg.codexHome ('sessions\'+(Get-Date -Format 'yyyy\MM\dd'))
+        [void][IO.Directory]::CreateDirectory($fixtureDir)
+        foreach($number in 1..3) {
+            $id='00000000-0000-7000-8000-'+$number.ToString('000000000000')
+            $rows=@(
+                @{type='session_meta';payload=@{id=$id;cwd=('C:\CodexPetFixture\Project'+$number)}},
+                @{type='turn_context';payload=@{model='gpt-6-sol'}},
+                @{type='event_msg';payload=@{type='task_complete'}}
+            ) | ForEach-Object {$_|ConvertTo-Json -Depth 6 -Compress}
+            [IO.File]::WriteAllText((Join-Path $fixtureDir ('rollout-'+$id+'.jsonl')),($rows -join "`n")+"`n",[Text.Encoding]::UTF8)
+        }
+    }
+}
 $created=$false
-$mutex=New-Object Threading.Mutex($true,'Local\CodexPetXiaoKe',[ref]$created)
+$mutexName=if($isDiagnostic){'Local\CodexPetXiaoKe.Check.'+[guid]::NewGuid().ToString('N')}else{'Local\CodexPetXiaoKe'}
+$mutex=New-Object Threading.Mutex($true,$mutexName,[ref]$created)
 if (-not $created -and -not $Preview -and -not $AnimationCheck -and $SmokeSeconds -eq 0) { exit }
 $stopPath=Join-Path $stateDir 'stop.signal'
 if (Test-Path -LiteralPath $stopPath) { Remove-Item -LiteralPath $stopPath }
@@ -95,6 +115,7 @@ function Say-Sequence([string]$text,[string[]]$actions) {
     $script:sequence=$actions;$script:sequenceStart=Get-Date
 }
 function Save-Config {
+    if($isDiagnostic) {return}
     $cfg.left=$window.Left; $cfg.top=$window.Top; $cfg.topmost=$window.Topmost
     $cfg.collapsed=($ui.CardFrame.Visibility -eq 'Collapsed')
     [IO.File]::WriteAllText($cfgPath,($cfg | ConvertTo-Json), (New-Object Text.UTF8Encoding($true)))
@@ -313,8 +334,9 @@ if($Preview) {
     $render.Render($visual); $encoder=New-Object Windows.Media.Imaging.PngBitmapEncoder; $encoder.Frames.Add([Windows.Media.Imaging.BitmapFrame]::Create($render))
     $previewName=if($ExpandedPreview){'preview-expanded.png'}else{'preview.png'}
     if($Language){$previewName=$previewName.Replace('.png','-'+$script:PetLanguage+'.png')}
-    $out=[IO.File]::Create((Join-Path $root $previewName));try {$encoder.Save($out)} finally {$out.Dispose()}
-    Write-Output 'preview saved';$usageWorker.Dispose();if($created) {$mutex.ReleaseMutex()};$mutex.Dispose();exit
+    $previewPath=Join-Path $diagnosticRoot $previewName
+    $out=[IO.File]::Create($previewPath);try {$encoder.Save($out)} finally {$out.Dispose()}
+    Write-Output ('preview saved: '+$previewPath);$usageWorker.Dispose();if($created) {$mutex.ReleaseMutex()};$mutex.Dispose();exit
 }
 Write-Log ('started; GIF clips='+$clips.Count+'; session='+$script:snapshot.Id)
 $animation.Start(); $refresh.Start()
@@ -349,14 +371,18 @@ if($SmokeSeconds -gt 0) {
     if($popup.Child.Background.Color.ToString() -ne '#FF19252A') {throw 'submenu surface differs'}
     Write-Log 'smoke: card, bubble, menu, submenu and percent input use opaque #19252A'
     $savedPin=$cfg.pinnedPath
+    $checkedSessions=0
     foreach($target in ($script:files | Select-Object -First 3)) {
+        $expected=Read-CodexSnapshot $target.FullName
         $cfg.pinnedPath=$target.FullName;$script:lastPath='';Refresh-Pet
-        if($script:snapshot.Path -ne $target.FullName -or $script:snapshot.Id -ne $target.Id -or $script:snapshot.Cwd -ne $target.Cwd) {throw 'session/project binding failed'}
+        if($script:snapshot.Path -ne $target.FullName -or $script:snapshot.Id -ne $expected.Id -or $script:snapshot.Cwd -ne $expected.Cwd) {throw 'session/project binding failed'}
         $metrics=$usageWorker.Snapshot() | ConvertFrom-Json
         if($metrics.Path -ne $target.FullName -and $ui.Tokens.Text -ne (Get-PetString 'reading')) {throw 'stale model fields shown after switch'}
+        $checkedSessions++
     }
     $cfg.pinnedPath=$savedPin;$script:lastPath='';Refresh-Pet
-    Write-Log 'smoke: three indexed sessions switched with matching id, project and metrics source'
+    if($checkedSessions -ne 3) {throw 'synthetic session fixtures were not exercised'}
+    Write-Log ('smoke: '+$checkedSessions+' synthetic sessions switched with matching id, project and metrics source')
     $savedScale=$cfg.scale
     foreach($pct in @(20,60,80,100)) {
         $scaleInput.Text=[string]$pct
@@ -371,4 +397,6 @@ if($SmokeSeconds -gt 0) {
     $smoke.Add_Tick({$smoke.Stop(); $window.Close()}); $smoke.Start()
 }
 [void]$window.ShowDialog()
+if($AnimationCheck -and @($script:checkResults|Where-Object {-not $_.Passed}).Count) {throw 'one or more GIF animations failed frame verification'}
+if($isDiagnostic) {Write-Output ('diagnostics saved: '+$diagnosticRoot)}
 } catch { Write-Log ($_ | Out-String); throw }

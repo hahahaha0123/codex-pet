@@ -4,6 +4,8 @@
 
 [English](README.en.md) · [下载 Windows 便携包](https://github.com/hahahaha0123/codex-pet/releases/latest) · [MIT License](LICENSE)
 
+当前版本：**2.6.1**。更新内容见 [CHANGELOG.md](CHANGELOG.md)。
+
 ![小柯招手动画](GIF动作/举手打招呼.gif)
 
 ## 开始使用
@@ -58,18 +60,24 @@ cd codex-pet
 .\tools\Test-Usage.ps1
 .\tools\Test-History.ps1
 .\tools\Test-Languages.ps1
+.\tools\Test-Diagnostics.ps1 -Animation
+.\CodexPet.Follow.ps1 -SelfTest
 .\CodexPet.ps1 -Preview -ExpandedPreview -Language en-US
 ```
 
-测试覆盖重复累计快照、模型切换、缓存计价、历史恢复、归档与分叉去重、项目改名，以及语言资源和实时切换。可用 `-SmokeSeconds 6` 检查窗口，或 `-AnimationCheck` 检查所有 GIF 的实际换帧。GitHub Actions 在 Windows 上运行离线检查与预览渲染。
+测试覆盖重复累计快照、模型切换、缓存计价、历史恢复、归档与分叉去重、项目改名，以及语言资源和实时切换。还覆盖文件占用后恢复、会话删除/重建，以及预览与正常桌宠的隔离。
+
+`-Preview`、`-SmokeSeconds 6`、`-AnimationCheck` 使用隔离配置和合成数据，输出保存到 `dist/checks/runs/<随机ID>/`，不读取本机 Codex 会话，也不改变已运行桌宠的配置、停止信号或单实例锁。`Test-Usage.ps1` 默认离线；确需只读检查本机会话目录时，先设置 `$env:CODEX_PET_TEST_LOCAL_CATALOG='1'`。GitHub Actions 在 Windows 上运行离线检查与预览渲染。
 
 生成发布包：
 
 ```powershell
-.\tools\Build-Release.ps1 -Version 2.6.0
+.\tools\Build-Release.ps1 -Version 2.6.1
 ```
 
 重新导出素材需要额外安装 Pillow：先运行 `tools/Export-AnimationFrames.ps1`，再运行 `tools/Encode-Gifs.py`。正常使用桌宠不需要 Python。
+
+发布包附带 SHA256 校验文件；构建会拒绝包含本机状态、日志、数据库、账号配置或旧 ZIP 的跟踪清单。发布检查记录见 [docs/release-2.6.1.md](docs/release-2.6.1.md)。
 
 ## 素材与许可
 

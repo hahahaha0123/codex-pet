@@ -4,6 +4,8 @@ A Windows desktop coding companion with 16 transparent GIF animations, local Cod
 
 [简体中文](README.md) · [Download for Windows](https://github.com/hahahaha0123/codex-pet/releases/latest) · [MIT License](LICENSE)
 
+Current version: **2.6.1**. See [CHANGELOG.md](CHANGELOG.md).
+
 ![Wave animation](GIF动作/举手打招呼.gif)
 
 ## Quick start
@@ -54,12 +56,14 @@ Run offline fixtures with Windows PowerShell:
 .\tools\Test-Usage.ps1
 .\tools\Test-History.ps1
 .\tools\Test-Languages.ps1
+.\tools\Test-Diagnostics.ps1 -Animation
+.\CodexPet.Follow.ps1 -SelfTest
 .\CodexPet.ps1 -Preview -ExpandedPreview -Language en-US
 ```
 
-Codex installation and authentication are not required for fixture tests. Optional real-session checks are skipped when local data is unavailable. Windows CI also renders a preview. Use `-SmokeSeconds 6` for window checks or `-AnimationCheck` to verify animation frame changes.
+Codex installation and authentication are not required for fixture tests. Preview, smoke and animation checks use isolated configuration and synthetic data under `dist/checks/runs/<random-id>/`. They do not read real sessions or change the running pet's settings, stop signal or mutex. `Test-Usage.ps1` defaults to offline fixtures; set `CODEX_PET_TEST_LOCAL_CATALOG=1` to opt into its read-only local catalog check. Windows CI also renders a preview. Use `-SmokeSeconds 6` for window checks or `-AnimationCheck` to verify animation frame changes.
 
-Build a portable release with `tools/Build-Release.ps1 -Version 2.6.0`. GIF re-encoding requires Pillow, but using the companion does not require Python.
+Build a portable release with `tools/Build-Release.ps1 -Version 2.6.1`. The build checks required runtime/animation files, rejects tracked local state and sensitive file types, and writes a SHA256 checksum. See [release verification](docs/release-2.6.1.md). GIF re-encoding requires Pillow, but using the companion does not require Python.
 
 ## License and artwork
 
