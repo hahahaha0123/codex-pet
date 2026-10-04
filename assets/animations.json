@@ -1,0 +1,162 @@
+﻿[
+  {
+    "key": "greet",
+    "label": "举手打招呼",
+    "file": "GIF动作/举手打招呼.gif",
+    "frames": 6,
+    "durationMs": 180,
+    "uniqueFrames": 6,
+    "width": 256,
+    "height": 256
+  },
+  {
+    "key": "happy",
+    "label": "开心跳跃",
+    "file": "GIF动作/开心跳跃.gif",
+    "frames": 6,
+    "durationMs": 180,
+    "uniqueFrames": 6,
+    "width": 256,
+    "height": 256
+  },
+  {
+    "key": "run",
+    "label": "迈步奔跑",
+    "file": "GIF动作/迈步奔跑.gif",
+    "frames": 6,
+    "durationMs": 180,
+    "uniqueFrames": 6,
+    "width": 256,
+    "height": 256
+  },
+  {
+    "key": "runRight",
+    "label": "向右奔跑",
+    "file": "GIF动作/向右奔跑.gif",
+    "frames": 6,
+    "durationMs": 180,
+    "uniqueFrames": 6,
+    "width": 256,
+    "height": 256
+  },
+  {
+    "key": "stretch",
+    "label": "抬臂伸懒腰",
+    "file": "GIF动作/抬臂伸懒腰.gif",
+    "frames": 6,
+    "durationMs": 180,
+    "uniqueFrames": 6,
+    "width": 256,
+    "height": 256
+  },
+  {
+    "key": "bow",
+    "label": "鞠躬致意",
+    "file": "GIF动作/鞠躬致意.gif",
+    "frames": 6,
+    "durationMs": 180,
+    "uniqueFrames": 6,
+    "width": 256,
+    "height": 256
+  },
+  {
+    "key": "work",
+    "label": "托腮思考",
+    "file": "GIF动作/托腮思考.gif",
+    "frames": 6,
+    "durationMs": 180,
+    "uniqueFrames": 6,
+    "width": 256,
+    "height": 256
+  },
+  {
+    "key": "shy",
+    "label": "捧脸害羞",
+    "file": "GIF动作/捧脸害羞.gif",
+    "frames": 6,
+    "durationMs": 180,
+    "uniqueFrames": 6,
+    "width": 256,
+    "height": 256
+  },
+  {
+    "key": "laugh",
+    "label": "捧腹大笑",
+    "file": "GIF动作/捧腹大笑.gif",
+    "frames": 6,
+    "durationMs": 180,
+    "uniqueFrames": 6,
+    "width": 256,
+    "height": 256
+  },
+  {
+    "key": "surprise",
+    "label": "后仰惊讶",
+    "file": "GIF动作/后仰惊讶.gif",
+    "frames": 6,
+    "durationMs": 180,
+    "uniqueFrames": 6,
+    "width": 256,
+    "height": 256
+  },
+  {
+    "key": "angry",
+    "label": "叉腰生气",
+    "file": "GIF动作/叉腰生气.gif",
+    "frames": 6,
+    "durationMs": 180,
+    "uniqueFrames": 6,
+    "width": 256,
+    "height": 256
+  },
+  {
+    "key": "cry",
+    "label": "揉眼哭泣",
+    "file": "GIF动作/揉眼哭泣.gif",
+    "frames": 6,
+    "durationMs": 180,
+    "uniqueFrames": 6,
+    "width": 256,
+    "height": 256
+  },
+  {
+    "key": "yawn",
+    "label": "坐着打哈欠",
+    "file": "GIF动作/坐着打哈欠.gif",
+    "frames": 6,
+    "durationMs": 180,
+    "uniqueFrames": 6,
+    "width": 256,
+    "height": 256
+  },
+  {
+    "key": "sleep",
+    "label": "蜷身睡觉",
+    "file": "GIF动作/蜷身睡觉.gif",
+    "frames": 6,
+    "durationMs": 260,
+    "uniqueFrames": 6,
+    "width": 256,
+    "height": 256
+  },
+  {
+    "key": "hug",
+    "label": "拥抱代码方块",
+    "file": "GIF动作/拥抱代码方块.gif",
+    "frames": 6,
+    "durationMs": 180,
+    "uniqueFrames": 6,
+    "width": 256,
+    "height": 256
+  },
+  {
+    "key": "hold",
+    "label": "双手托代码方块",
+    "file": "GIF动作/双手托代码方块.gif",
+    "frames": 6,
+    "durationMs": 180,
+    "uniqueFrames": 6,
+    "width": 256,
+    "height": 256
+  }
+]

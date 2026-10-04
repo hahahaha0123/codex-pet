@@ -1,0 +1,14 @@
+# Local runtime and account-derived history
+state/
+pet.config.json
+follow.config.json
+dist/
+*.zip
+*.log
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+Thumbs.db
+.DS_Store

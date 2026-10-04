@@ -1,0 +1,27 @@
+name: Windows checks
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Data parsing fixtures
+        shell: powershell
+        run: .\tools\Test-Data.ps1
+      - name: Usage and pricing fixtures
+        shell: powershell
+        run: .\tools\Test-Usage.ps1
+      - name: History, cache and project fixtures
+        shell: powershell
+        run: .\tools\Test-History.ps1
+      - name: Language resource checks
+        shell: powershell
+        run: .\tools\Test-Languages.ps1
+      - name: Render preview from default configuration
+        shell: powershell
+        run: .\CodexPet.ps1 -Preview -ExpandedPreview -Language en-US

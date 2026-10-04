@@ -1,0 +1,10 @@
+{
+ "gpt-6.1-sol": {"input":2,"cached":0.1,"write":2.5,"output":10,"longInputFactor":2},
+ "gpt-6-astra": {"input":10,"cached":1,"write":12.5,"output":50,"longInputFactor":2},
+ "gpt-6-sol": {"input":2,"cached":0.2,"write":2.5,"output":10,"longInputFactor":2},
+ "gpt-6-luna": {"input":0.1,"cached":0.01,"write":0.125,"output":0.5,"longInputFactor":2},
+ "gpt-5.6-sol": {"input":4,"cached":0.4,"write":5,"output":20,"longInputFactor":2},
+ "gpt-5.6-terra": {"input":2,"cached":0.2,"write":2.5,"output":12,"longInputFactor":2},
+ "gpt-5.6-luna": {"input":0.2,"cached":0.02,"write":0.25,"output":1.2,"longInputFactor":2},
+ "gpt-5.5": {"input":5,"cached":0.5,"write":5,"output":30,"longInputFactor":2}
+}
